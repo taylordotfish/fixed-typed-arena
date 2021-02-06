@@ -1,0 +1,22 @@
+[package]
+name = "fixed-typed-arena"
+version = "0.1.0"
+authors = ["taylor.fish <contact@taylor.fish>"]
+edition = "2018"
+description = """\
+    A typed arena that uses fixed-size chunks to ensure non-amortized O(1)
+    allocations
+    """
+documentation = "https://docs.rs/fixed-typed-arena"
+readme = "misc/crate-readme.md"
+repository = "https://github.com/taylordotfish/fixed-typed-arena"
+license = "GPL-3.0-or-later"
+keywords = ["arena", "constant-time", "fixed-size", "latency", "typed-arena"]
+categories = ["memory-management", "no-std"]
+
+[dependencies]
+typenum = "1.12"
+
+[features]
+dropck_eyepatch = []
+unstable = ["dropck_eyepatch"]

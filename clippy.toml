@@ -1,0 +1,2 @@
+# The crate documentation uses “ManuallyDropArena” as a heading.
+doc-valid-idents = ["ManuallyDropArena"]
