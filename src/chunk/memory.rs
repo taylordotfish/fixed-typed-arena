@@ -18,7 +18,7 @@
  */
 
 use super::Chunk;
-use alloc::alloc::Layout;
+use alloc::alloc::{handle_alloc_error, Layout};
 use core::marker::PhantomData;
 use core::mem;
 use core::mem::MaybeUninit;
@@ -40,7 +40,11 @@ pub struct ChunkMemory<T, Size: Unsigned>(
 );
 
 impl<T, Size: Unsigned> ChunkMemory<T, Size> {
-    pub fn new() -> Option<Self> {
+    pub fn new() -> Self {
+        Self::try_new().unwrap_or_else(|| handle_alloc_error(Self::layout()))
+    }
+
+    pub fn try_new() -> Option<Self> {
         let layout = Self::layout();
         assert!(layout.size() > 0);
         Some(Self(

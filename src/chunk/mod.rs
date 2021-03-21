@@ -28,10 +28,10 @@ use memory::ChunkMemory;
 pub struct Chunk<T, Size: Unsigned>(ChunkMemory<T, Size>);
 
 impl<T, Size: Unsigned> Chunk<T, Size> {
-    pub fn new(prev: Option<Self>) -> Option<Self> {
-        let mut memory = ChunkMemory::new()?;
+    pub fn new(prev: Option<Self>) -> Self {
+        let mut memory = ChunkMemory::new();
         *memory.prev() = MaybeUninit::new(prev);
-        Some(Self(memory))
+        Self(memory)
     }
 
     pub fn into_prev(self) -> Option<Self> {

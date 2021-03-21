@@ -55,9 +55,7 @@ impl<T, ChunkSize: Unsigned> ArenaInner<T, ChunkSize> {
             // `self.tail_len` to `ChunkSize::USIZE`.
             return;
         }
-        self.tail = Some(
-            Chunk::new(self.tail.take()).expect("memory allocation failed"),
-        );
+        self.tail = Some(Chunk::new(self.tail.take()));
         self.tail_len = 0;
     }
 

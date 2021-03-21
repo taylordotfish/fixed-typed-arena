@@ -1,6 +1,6 @@
 [package]
 name = "fixed-typed-arena"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["taylor.fish <contact@taylor.fish>"]
 edition = "2018"
 description = """\
