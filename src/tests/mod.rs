@@ -19,3 +19,21 @@
 
 mod arena;
 mod manually_drop;
+
+/// The example from the crate documentation. It's duplicated here because Miri
+/// currently doesn't run doctests.
+#[test]
+fn crate_example() {
+    use crate::Arena;
+    use typenum::U64;
+
+    struct Item(u64);
+
+    let arena = Arena::<_, U64>::new();
+    let item1 = arena.alloc(Item(1));
+    let item2 = arena.alloc(Item(2));
+    item1.0 += item2.0;
+
+    assert_eq!(item1.0, 3);
+    assert_eq!(item2.0, 2);
+}

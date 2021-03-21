@@ -17,9 +17,6 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Until https://github.com/rust-lang/rust-clippy/issues/6633 is fixed:
-#![allow(clippy::let_underscore_drop)]
-
 use crate::Arena;
 use core::cell::Cell;
 use typenum::{U2, U4};
