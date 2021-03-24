@@ -19,33 +19,29 @@
 
 use super::inner::ArenaInner;
 use core::cell::UnsafeCell;
-use typenum::{Unsigned, U16};
 
 /// An arena that allocates items of type `T` in non-amortized O(1) (constant)
 /// time.
 ///
 /// The arena allocates fixed-size chunks of memory, each able to hold up to
-/// `ChunkSize` items. `ChunkSize` is an unsigned
-/// [type-level integer](typenum).
-///
-/// All items are allocated on the heap.
+/// `CHUNK_SIZE` items. All items are allocated on the heap.
 ///
 /// # Panics
 ///
 /// The arena may panic when created or used if
 /// [`mem::size_of::<T>()`](core::mem::size_of) times
-/// [`ChunkSize::USIZE`](Unsigned::USIZE) is greater than [`usize::MAX`].
-pub struct Arena<T, ChunkSize: Unsigned = U16>(
-    UnsafeCell<ArenaInner<T, ChunkSize>>,
+/// `CHUNK_SIZE` is greater than [`usize::MAX`].
+pub struct Arena<T, const CHUNK_SIZE: usize>(
+    UnsafeCell<ArenaInner<T, CHUNK_SIZE>>,
 );
 
-impl<T, ChunkSize: Unsigned> Default for Arena<T, ChunkSize> {
+impl<T, const CHUNK_SIZE: usize> Default for Arena<T, CHUNK_SIZE> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T, ChunkSize: Unsigned> Arena<T, ChunkSize> {
+impl<T, const CHUNK_SIZE: usize> Arena<T, CHUNK_SIZE> {
     /// Creates a new [`Arena`].
     pub fn new() -> Self {
         Self(UnsafeCell::new(ArenaInner::new()))

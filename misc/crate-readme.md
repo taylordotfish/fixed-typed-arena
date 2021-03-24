@@ -26,11 +26,9 @@ Example
 
 ```rust
 use fixed_typed_arena::Arena;
-use typenum::U64;
-
 struct Item(u64);
 
-let arena = Arena::<_, U64>::new();
+let arena = Arena::<_, 128>::new();
 let item1 = arena.alloc(Item(1));
 let item2 = arena.alloc(Item(2));
 item1.0 += item2.0;

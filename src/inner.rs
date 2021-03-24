@@ -20,43 +20,38 @@
 use super::chunk::Chunk;
 use core::hint::unreachable_unchecked;
 use core::marker::PhantomData;
-use typenum::Unsigned;
 
 // Invariants:
 //
 // * If `tail` is not `None`, the items in `tail` at indices up to (but not
 //   including) `tail_len` are initialized.
 //
-// * If `tail_len` is less than `<ChunkSize as typenum::Unsigned>::USIZE`,
-//   `tail` is not `None`.
+// * If `tail_len` is less than `CHUNK_SIZE`, `tail` is not `None`.
 //
 // * Every `Chunk`, except possibly for `tail`, is full (i.e., all items in
 //   that chunk are initialized).
-pub struct ArenaInner<T, ChunkSize: Unsigned> {
-    tail: Option<Chunk<T, ChunkSize>>,
+pub struct ArenaInner<T, const CHUNK_SIZE: usize> {
+    tail: Option<Chunk<T, CHUNK_SIZE>>,
     tail_len: usize,
     // Lets dropck know that `T` may be dropped.
     phantom: PhantomData<T>,
 }
 
-impl<T, ChunkSize: Unsigned> ArenaInner<T, ChunkSize> {
+impl<T, const CHUNK_SIZE: usize> ArenaInner<T, CHUNK_SIZE> {
     pub fn new() -> Self {
         Self {
             tail: None,
-            tail_len: ChunkSize::USIZE,
+            tail_len: CHUNK_SIZE,
             phantom: PhantomData,
         }
     }
 
     fn ensure_free_space(&mut self) {
-        assert!(
-            ChunkSize::USIZE > 0,
-            "cannot allocate items when chunk size is 0",
-        );
-        if self.tail_len < ChunkSize::USIZE {
+        assert!(CHUNK_SIZE > 0, "cannot allocate items when chunk size is 0");
+        if self.tail_len < CHUNK_SIZE {
             // `self.tail` cannot be `None`. The only time `self.tail` is
             // `None` is after calling `Self::new`, which also sets
-            // `self.tail_len` to `ChunkSize::USIZE`.
+            // `self.tail_len` to `CHUNK_SIZE`.
             return;
         }
         self.tail = Some(Chunk::new(self.tail.take()));
@@ -84,52 +79,44 @@ impl<T, ChunkSize: Unsigned> ArenaInner<T, ChunkSize> {
         // SAFETY: We just initialized `uninit` with `value`.
         unsafe { &mut *item.as_ptr() }
     }
+}
 
-    /// # Safety
-    ///
-    /// This function should be used only by the implementation of [`Drop`].
-    /// It's available as a private method to reduce code duplication from the
-    /// fact that we conditionally compile one of two [`Drop`] implementations
-    /// depending on whether we can use `may_dangle`.
-    unsafe fn drop(&mut self) {
-        let mut tail = if let Some(tail) = self.tail.take() {
-            tail
-        } else {
-            return;
-        };
+macro_rules! drop_fn {
+    () => {
+        fn drop(&mut self) {
+            let mut tail = if let Some(tail) = self.tail.take() {
+                tail
+            } else {
+                return;
+            };
 
-        // Drop the items in the tail chunk.
-        for i in (0..self.tail_len).rev() {
-            // SAFETY: The items in `self.tail` (when not `None`) at indices up
-            // to `self.tail_len` are always initialized.
-            unsafe {
-                tail.drop_item(i);
+            // Drop the items in the tail chunk.
+            for i in (0..self.tail_len).rev() {
+                // SAFETY: The items in `self.tail` (when not `None`) at
+                // indices up to `self.tail_len` are always initialized.
+                unsafe {
+                    tail.drop_item(i);
+                }
+            }
+
+            // Drop the items in all other chunks.
+            let mut prev = tail.into_prev();
+            while let Some(mut chunk) = prev {
+                // SAFETY: All chunks, except possibly for tail, which we
+                // already handled above, are guaranteed to be full (all items
+                // initialized).
+                unsafe {
+                    chunk.drop_all();
+                }
+                prev = chunk.into_prev();
             }
         }
-
-        // Drop the items in all other chunks.
-        let mut prev = tail.into_prev();
-        while let Some(mut chunk) = prev {
-            // SAFETY: All chunks, except possibly for tail, which we already
-            // handled above, are guaranteed to be full (all items
-            // initialized).
-            unsafe {
-                chunk.drop_all();
-            }
-            prev = chunk.into_prev();
-        }
-    }
+    };
 }
 
 #[cfg(not(feature = "dropck_eyepatch"))]
-impl<T, ChunkSize: Unsigned> Drop for ArenaInner<T, ChunkSize> {
-    fn drop(&mut self) {
-        // SAFETY: `ArenaInner::drop` is intended to be called by the
-        // implementation of `Drop`. See that method's documentation.
-        unsafe {
-            ArenaInner::drop(self);
-        }
-    }
+impl<T, const CHUNK_SIZE: usize> Drop for ArenaInner<T, CHUNK_SIZE> {
+    drop_fn!();
 }
 
 // SAFETY: This `Drop` impl does directly or indirectly access any data in any
@@ -140,14 +127,8 @@ impl<T, ChunkSize: Unsigned> Drop for ArenaInner<T, ChunkSize> {
 // [2]: https://forge.rust-lang.org/libs/maintaining-std.html
 //      #is-there-a-manual-drop-implementation
 #[cfg(feature = "dropck_eyepatch")]
-unsafe impl<#[may_dangle] T, ChunkSize: Unsigned> Drop
-    for ArenaInner<T, ChunkSize>
+unsafe impl<#[may_dangle] T, const CHUNK_SIZE: usize> Drop
+    for ArenaInner<T, CHUNK_SIZE>
 {
-    fn drop(&mut self) {
-        // SAFETY: `ArenaInner::drop` is intended to be called by the
-        // implementation of `Drop`. See that method's documentation.
-        unsafe {
-            ArenaInner::drop(self);
-        }
-    }
+    drop_fn!();
 }

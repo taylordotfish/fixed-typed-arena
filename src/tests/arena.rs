@@ -19,16 +19,15 @@
 
 use crate::Arena;
 use core::cell::Cell;
-use typenum::{U0, U2, U4};
 
 #[test]
 fn empty() {
-    Arena::<u8>::new();
+    Arena::<u8, 16>::new();
 }
 
 #[test]
 fn basic() {
-    let arena = Arena::<_>::new();
+    let arena = Arena::<_, 16>::new();
     let item1 = arena.alloc(1_u8);
     let item2 = arena.alloc(2_u8);
     let item3 = arena.alloc(3_u8);
@@ -39,7 +38,7 @@ fn basic() {
 
 #[test]
 fn multiple_chunks() {
-    let arena = Arena::<_, U2>::new();
+    let arena = Arena::<_, 2>::new();
     let item1 = arena.alloc(1_u8);
     let item2 = arena.alloc(2_u8);
     let item3 = arena.alloc(3_u8);
@@ -66,7 +65,7 @@ fn ensure_dropped() {
     }
 
     let drop_flags: [Cell<bool>; 32] = Default::default();
-    let arena = Arena::<_, U4>::new();
+    let arena = Arena::<_, 4>::new();
 
     for flag in &drop_flags {
         let _ = arena.alloc(Item {
@@ -86,7 +85,7 @@ fn same_life_ref() {
         next: Cell<Option<&'a Self>>,
     }
 
-    let arena = Arena::<_>::new();
+    let arena = Arena::<_, 16>::new();
     let item1 = arena.alloc(Item {
         next: Cell::new(None),
     });
@@ -99,6 +98,6 @@ fn same_life_ref() {
 #[test]
 #[should_panic]
 fn zero_chunk_size() {
-    let arena = Arena::<_, U0>::new();
+    let arena = Arena::<_, 0>::new();
     let _ = arena.alloc(0_u8);
 }

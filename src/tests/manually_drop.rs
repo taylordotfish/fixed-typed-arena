@@ -20,16 +20,15 @@
 use crate::ManuallyDropArena;
 use alloc::rc::Rc;
 use core::cell::Cell;
-use typenum::{U2, U4};
 
 #[test]
 fn empty() {
-    ManuallyDropArena::<u8>::new();
+    ManuallyDropArena::<u8, 16>::new();
 }
 
 #[test]
 fn basic() {
-    let mut arena = ManuallyDropArena::<_>::new();
+    let mut arena = ManuallyDropArena::<_, 16>::new();
     let item1 = arena.alloc(1_u8);
     let item2 = arena.alloc(2_u8);
     let item3 = arena.alloc(3_u8);
@@ -43,7 +42,7 @@ fn basic() {
 
 #[test]
 fn multiple_chunks() {
-    let mut arena = ManuallyDropArena::<_, U2>::new();
+    let mut arena = ManuallyDropArena::<_, 2>::new();
     let item1 = arena.alloc(1_u8);
     let item2 = arena.alloc(2_u8);
     let item3 = arena.alloc(3_u8);
@@ -73,7 +72,7 @@ fn ensure_dropped() {
     }
 
     let drop_flags: [Rc<Cell<bool>>; 12] = Default::default();
-    let mut arena = ManuallyDropArena::<_, U4>::new();
+    let mut arena = ManuallyDropArena::<_, 4>::new();
 
     for flag in drop_flags.iter().cloned() {
         let _ = arena.alloc(Item {
@@ -99,7 +98,7 @@ fn ensure_leaked() {
         }
     }
 
-    let mut arena = ManuallyDropArena::<_, U4>::new();
+    let mut arena = ManuallyDropArena::<_, 4>::new();
     for i in 0..12 {
         let _ = arena.alloc(Item(i));
     }

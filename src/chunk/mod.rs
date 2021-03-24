@@ -19,15 +19,14 @@
 
 use core::mem::MaybeUninit;
 use core::ptr::NonNull;
-use typenum::Unsigned;
 
 mod memory;
 use memory::ChunkMemory;
 
 #[repr(transparent)]
-pub struct Chunk<T, Size: Unsigned>(ChunkMemory<T, Size>);
+pub struct Chunk<T, const SIZE: usize>(ChunkMemory<T, SIZE>);
 
-impl<T, Size: Unsigned> Chunk<T, Size> {
+impl<T, const SIZE: usize> Chunk<T, SIZE> {
     pub fn new(prev: Option<Self>) -> Self {
         let mut memory = ChunkMemory::new();
         *memory.prev() = MaybeUninit::new(prev);
@@ -46,9 +45,7 @@ impl<T, Size: Unsigned> Chunk<T, Size> {
     ///
     /// # Safety
     ///
-    /// `i` must be less than `Size` (specifically, [`Size::USIZE`][USIZE]).
-    ///
-    /// [USIZE]: Unsigned::USIZE
+    /// `i` must be less than `SIZE`.
     pub unsafe fn get(&self, i: usize) -> NonNull<T> {
         let storage: NonNull<T> = self.0.storage();
         // SAFETY: Caller guarantees `i` is in bounds.
@@ -76,7 +73,7 @@ impl<T, Size: Unsigned> Chunk<T, Size> {
     ///   will make them uninitialized.
     /// * It must be safe to drop all items.
     pub unsafe fn drop_all(&mut self) {
-        for i in (0..Size::USIZE).rev() {
+        for i in (0..SIZE).rev() {
             // SAFETY: Caller guarantees that all items are initialized and
             // safe to drop.
             unsafe {

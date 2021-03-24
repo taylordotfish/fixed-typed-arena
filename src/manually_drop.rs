@@ -19,7 +19,6 @@
 
 use super::Arena;
 use core::mem::ManuallyDrop;
-use typenum::{Unsigned, U16};
 
 /// Like [`Arena`], but returns references of any lifetime, including
 /// `'static`.
@@ -27,17 +26,17 @@ use typenum::{Unsigned, U16};
 /// This lets the arena be used without being borrowed, but it comes with the
 /// tradeoff that the arena leaks memory unless the unsafe [`drop`](Self::drop)
 /// method is called.
-pub struct ManuallyDropArena<T, ChunkSize: Unsigned = U16>(
-    ManuallyDrop<Arena<T, ChunkSize>>,
+pub struct ManuallyDropArena<T, const CHUNK_SIZE: usize>(
+    ManuallyDrop<Arena<T, CHUNK_SIZE>>,
 );
 
-impl<T, ChunkSize: Unsigned> Default for ManuallyDropArena<T, ChunkSize> {
+impl<T, const CHUNK_SIZE: usize> Default for ManuallyDropArena<T, CHUNK_SIZE> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T, ChunkSize: Unsigned> ManuallyDropArena<T, ChunkSize> {
+impl<T, const CHUNK_SIZE: usize> ManuallyDropArena<T, CHUNK_SIZE> {
     /// Creates a new [`ManuallyDropArena`].
     pub fn new() -> Self {
         Self(ManuallyDrop::new(Arena::new()))

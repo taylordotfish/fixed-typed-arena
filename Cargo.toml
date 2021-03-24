@@ -1,6 +1,6 @@
 [package]
 name = "fixed-typed-arena"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["taylor.fish <contact@taylor.fish>"]
 edition = "2018"
 description = """\
@@ -14,9 +14,5 @@ license = "GPL-3.0-or-later"
 keywords = ["arena", "constant-time", "fixed-size", "latency", "typed-arena"]
 categories = ["memory-management", "no-std"]
 
-[dependencies]
-typenum = "1.12"
-
 [features]
 dropck_eyepatch = []
-unstable = ["dropck_eyepatch"]

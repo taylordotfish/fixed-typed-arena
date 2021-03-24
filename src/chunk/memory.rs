@@ -23,7 +23,6 @@ use core::marker::PhantomData;
 use core::mem;
 use core::mem::MaybeUninit;
 use core::ptr::NonNull;
-use typenum::Unsigned;
 
 // Invariants:
 //
@@ -34,12 +33,12 @@ use typenum::Unsigned;
 //   single instance of this type. (In particular, there must not be two
 //   instances that refer to the same memory.)
 #[repr(transparent)]
-pub struct ChunkMemory<T, Size: Unsigned>(
+pub struct ChunkMemory<T, const SIZE: usize>(
     NonNull<u8>,
-    PhantomData<(NonNull<T>, *const Size)>,
+    PhantomData<NonNull<T>>,
 );
 
-impl<T, Size: Unsigned> ChunkMemory<T, Size> {
+impl<T, const SIZE: usize> ChunkMemory<T, SIZE> {
     pub fn new() -> Self {
         Self::try_new().unwrap_or_else(|| handle_alloc_error(Self::layout()))
     }
@@ -56,7 +55,7 @@ impl<T, Size: Unsigned> ChunkMemory<T, Size> {
         ))
     }
 
-    pub fn prev(&mut self) -> &mut MaybeUninit<Option<Chunk<T, Size>>> {
+    pub fn prev(&mut self) -> &mut MaybeUninit<Option<Chunk<T, SIZE>>> {
         // SAFETY: `Self::prev_offset()` is never larger than the size of the
         // memory pointed to by `self.0`.
         let ptr = unsafe { self.0.as_ptr().add(Self::prev_offset()) };
@@ -70,11 +69,8 @@ impl<T, Size: Unsigned> ChunkMemory<T, Size> {
     }
 
     /// Returns a pointer to the start of the storage. It is guaranteed to be
-    /// large enough to hold at least `Size` (specifically,
-    /// [`Size::USIZE`][USIZE]) aligned values of type `T`. Note that the
-    /// memory could be uninitialized.
-    ///
-    /// [USIZE]: Unsigned::USIZE
+    /// large enough to hold at least `SIZE` aligned values of type `T`. Note
+    /// that the memory could be uninitialized.
     pub fn storage(&self) -> NonNull<T> {
         // SAFETY: `Self::storage_offset()` is never larger than the size
         // of the memory pointed to by `self.0`.
@@ -112,50 +108,36 @@ impl<T, Size: Unsigned> ChunkMemory<T, Size> {
     }
 
     fn prev_size() -> usize {
-        mem::size_of::<Option<Chunk<T, Size>>>()
+        mem::size_of::<Option<Chunk<T, SIZE>>>()
     }
 
     fn prev_align() -> usize {
-        mem::align_of::<Option<Chunk<T, Size>>>()
+        mem::align_of::<Option<Chunk<T, SIZE>>>()
     }
 
     fn storage_size() -> usize {
-        mem::size_of::<T>().checked_mul(Size::USIZE).expect("size overflow")
+        mem::size_of::<T>().checked_mul(SIZE).expect("size overflow")
     }
+}
 
-    /// # Safety
-    ///
-    /// This function should be used only by the implementation of [`Drop`].
-    /// It's available as a private method to reduce code duplication from the
-    /// fact that we conditionally compile one of two [`Drop`] implementations
-    /// depending on whether we can use `may_dangle`.
-    unsafe fn drop(&mut self) {
-        // SAFETY: `self.0` always points to memory allocated by the global
-        // allocator with the layout `Self::layout()`.
-        unsafe {
-            alloc::alloc::dealloc(self.0.as_ptr(), Self::layout());
+macro_rules! drop_fn {
+    () => {
+        fn drop(&mut self) {
+            // SAFETY: `self.0` always points to memory allocated by the global
+            // allocator with the layout `Self::layout()`.
+            unsafe {
+                alloc::alloc::dealloc(self.0.as_ptr(), Self::layout());
+            }
         }
-    }
+    };
 }
 
 #[cfg(not(feature = "dropck_eyepatch"))]
-impl<T, Size: Unsigned> Drop for ChunkMemory<T, Size> {
-    fn drop(&mut self) {
-        // SAFETY: `ChunkMemory::drop` is intended to be called by the
-        // implementation of `Drop`. See that method's documentation.
-        unsafe {
-            ChunkMemory::drop(self);
-        }
-    }
+impl<T, const SIZE: usize> Drop for ChunkMemory<T, SIZE> {
+    drop_fn!();
 }
 
 #[cfg(feature = "dropck_eyepatch")]
-unsafe impl<#[may_dangle] T, Size: Unsigned> Drop for ChunkMemory<T, Size> {
-    fn drop(&mut self) {
-        // SAFETY: `ChunkMemory::drop` is intended to be called by the
-        // implementation of `Drop`. See that method's documentation.
-        unsafe {
-            ChunkMemory::drop(self);
-        }
-    }
+unsafe impl<#[may_dangle] T, const SIZE: usize> Drop for ChunkMemory<T, SIZE> {
+    drop_fn!();
 }
