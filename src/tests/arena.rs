@@ -19,7 +19,7 @@
 
 use crate::Arena;
 use core::cell::Cell;
-use typenum::{U2, U4};
+use typenum::{U0, U2, U4};
 
 #[test]
 fn empty() {
@@ -94,4 +94,11 @@ fn same_life_ref() {
         next: Cell::new(Some(item1)),
     });
     item1.next.set(Some(item2));
+}
+
+#[test]
+#[should_panic]
+fn zero_chunk_size() {
+    let arena = Arena::<_, U0>::new();
+    let _ = arena.alloc(0_u8);
 }

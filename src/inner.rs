@@ -49,6 +49,10 @@ impl<T, ChunkSize: Unsigned> ArenaInner<T, ChunkSize> {
     }
 
     fn ensure_free_space(&mut self) {
+        assert!(
+            ChunkSize::USIZE > 0,
+            "cannot allocate items when chunk size is 0",
+        );
         if self.tail_len < ChunkSize::USIZE {
             // `self.tail` cannot be `None`. The only time `self.tail` is
             // `None` is after calling `Self::new`, which also sets
