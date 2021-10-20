@@ -141,3 +141,8 @@ impl<T, const SIZE: usize> Drop for ChunkMemory<T, SIZE> {
 unsafe impl<#[may_dangle] T, const SIZE: usize> Drop for ChunkMemory<T, SIZE> {
     drop_fn!();
 }
+
+// SAFETY: `ChunkMemory` represents an owned region of memory (in particular,
+// no two instances of `ChunkMemory` will point to the same region of memory),
+// so it can be sent to another thread.
+unsafe impl<T, const SIZE: usize> Send for ChunkMemory<T, SIZE> {}
