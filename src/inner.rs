@@ -116,7 +116,7 @@ macro_rules! drop_fn {
 
 #[cfg(not(feature = "dropck_eyepatch"))]
 impl<T, const CHUNK_SIZE: usize> Drop for ArenaInner<T, CHUNK_SIZE> {
-    drop_fn!();
+    drop_fn! {}
 }
 
 // SAFETY: This `Drop` impl does directly or indirectly access any data in any
@@ -130,5 +130,5 @@ impl<T, const CHUNK_SIZE: usize> Drop for ArenaInner<T, CHUNK_SIZE> {
 unsafe impl<#[may_dangle] T, const CHUNK_SIZE: usize> Drop
     for ArenaInner<T, CHUNK_SIZE>
 {
-    drop_fn!();
+    drop_fn! {}
 }
