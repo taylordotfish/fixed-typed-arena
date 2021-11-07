@@ -65,9 +65,9 @@
 //! ----------
 //!
 //! Items allocated by an [`Arena`] can contain references to other items in
-//! the same arena, but the crate feature `"dropck_eyepatch"` must be enabled
-//! (which requires Rust nightly). This is because fixed-typed-arena has to use
-//! the [unstable feature of the same name][dropck_eyepatch].
+//! the same arena, but the crate feature `dropck_eyepatch` must be enabled
+//! (which requires Rust nightly), as fixed-typed-arena must use the
+//! [unstable feature of the same name][dropck_eyepatch].
 //!
 //! [dropck_eyepatch]: https://github.com/rust-lang/rust/issues/34761
 //!
