@@ -75,4 +75,24 @@ impl<T, const CHUNK_SIZE: usize> ManuallyDropArena<T, CHUNK_SIZE> {
     pub unsafe fn drop(&mut self) {
         core::mem::take(&mut *self.0);
     }
+
+    /// Alias of [`Self::drop`]. Can be used to prevent name collisions when
+    /// this arena is stored in a [`Deref`][core::ops::Deref] type:
+    ///
+    /// ```
+    /// # use fixed_typed_arena::ManuallyDropArena;
+    /// let mut arena = Box::new(ManuallyDropArena::<u8, 8>::new());
+    /// //unsafe { arena.drop() }; // Compile error: resolves to `Drop::drop`
+    /// unsafe { arena.manually_drop() }; // Works as expected
+    /// ```
+    ///
+    /// # Safety
+    ///
+    /// Same requirements as [`Self::drop`].
+    pub unsafe fn manually_drop(&mut self) {
+        // SAFETY: Checked by caller.
+        unsafe {
+            self.drop();
+        }
+    }
 }
