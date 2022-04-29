@@ -17,21 +17,89 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod arena;
+use crate::Arena;
+use core::cell::Cell;
+
 mod manually_drop;
 
-/// The example from the crate documentation. It's duplicated here because Miri
-/// currently doesn't run doctests.
 #[test]
-fn crate_example() {
-    use crate::Arena;
-    struct Item(u64);
+fn empty() {
+    Arena::<u8, 16>::new();
+}
 
-    let arena = Arena::<_, 128>::new();
-    let item1 = arena.alloc(Item(1));
-    let item2 = arena.alloc(Item(2));
-    item1.0 += item2.0;
+#[test]
+fn basic() {
+    let arena = Arena::<_, 16>::new();
+    let item1 = arena.alloc(1_u8);
+    let item2 = arena.alloc(2_u8);
+    let item3 = arena.alloc(3_u8);
+    assert_eq!(*item1, 1_u8);
+    assert_eq!(*item2, 2_u8);
+    assert_eq!(*item3, 3_u8);
+}
 
-    assert_eq!(item1.0, 3);
-    assert_eq!(item2.0, 2);
+#[test]
+fn multiple_chunks() {
+    let arena = Arena::<_, 2>::new();
+    let item1 = arena.alloc(1_u8);
+    let item2 = arena.alloc(2_u8);
+    let item3 = arena.alloc(3_u8);
+    let item4 = arena.alloc(4_u8);
+    let item5 = arena.alloc(5_u8);
+    assert_eq!(*item1, 1_u8);
+    assert_eq!(*item2, 2_u8);
+    assert_eq!(*item3, 3_u8);
+    assert_eq!(*item4, 4_u8);
+    assert_eq!(*item5, 5_u8);
+}
+
+#[test]
+fn ensure_dropped() {
+    struct Item<'a> {
+        drop_flag: &'a Cell<bool>,
+    }
+
+    impl Drop for Item<'_> {
+        fn drop(&mut self) {
+            assert!(!self.drop_flag.get(), "value dropped twice");
+            self.drop_flag.set(true);
+        }
+    }
+
+    let drop_flags: [Cell<bool>; 32] = Default::default();
+    let arena = Arena::<_, 4>::new();
+
+    for flag in &drop_flags {
+        let _ = arena.alloc(Item {
+            drop_flag: flag,
+        });
+    }
+
+    assert!(!drop_flags.iter().all(Cell::get));
+    core::mem::drop(arena);
+    assert!(drop_flags.iter().all(Cell::get));
+}
+
+#[cfg(feature = "dropck_eyepatch")]
+#[test]
+fn same_life_ref() {
+    struct Item<'a> {
+        next: Cell<Option<&'a Self>>,
+    }
+
+    let arena = Arena::<_, 16>::new();
+    let item1 = arena.alloc(Item {
+        next: Cell::new(None),
+    });
+    let item2 = arena.alloc(Item {
+        next: Cell::new(Some(item1)),
+    });
+    item1.next.set(Some(item2));
+}
+
+#[test]
+#[should_panic]
+fn zero_chunk_size() {
+    let arena = Arena::<_, 0>::new();
+    let _ = arena.alloc(0_u8);
 }

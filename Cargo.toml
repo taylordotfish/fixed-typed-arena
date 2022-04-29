@@ -1,6 +1,6 @@
 [package]
 name = "fixed-typed-arena"
-version = "0.2.2"
+version = "0.2.3-dev"
 authors = ["taylor.fish <contact@taylor.fish>"]
 edition = "2018"
 description = """A typed arena that uses fixed-size chunks to ensure \
