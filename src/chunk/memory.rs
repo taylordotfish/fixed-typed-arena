@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 taylor.fish <contact@taylor.fish>
+ * Copyright (C) 2021-2022 taylor.fish <contact@taylor.fish>
  *
  * This file is part of fixed-typed-arena.
  *
@@ -19,6 +19,7 @@
 
 use super::Chunk;
 use alloc::alloc::{handle_alloc_error, Layout};
+use alloc::boxed::Box;
 use core::marker::PhantomData;
 use core::mem;
 use core::mem::MaybeUninit;
@@ -35,7 +36,8 @@ use core::ptr::NonNull;
 #[repr(transparent)]
 pub struct ChunkMemory<T, const SIZE: usize>(
     NonNull<u8>,
-    PhantomData<NonNull<T>>,
+    // Lets dropck know that `T` may be dropped.
+    PhantomData<Box<T>>,
 );
 
 impl<T, const SIZE: usize> ChunkMemory<T, SIZE> {
@@ -137,6 +139,11 @@ impl<T, const SIZE: usize> Drop for ChunkMemory<T, SIZE> {
     drop_fn!();
 }
 
+// SAFETY: This `Drop` impl does not directly or indirectly access any data in
+// any `T`, except for calling `T`'s destructor, and `Self` contains a
+// `PhantomData<Box<T>>` so dropck knows that `T` may be dropped.
+//
+// See `ArenaInner`'s `Drop` impl for more information.
 #[cfg(feature = "dropck_eyepatch")]
 unsafe impl<#[may_dangle] T, const SIZE: usize> Drop for ChunkMemory<T, SIZE> {
     drop_fn!();
@@ -144,5 +151,5 @@ unsafe impl<#[may_dangle] T, const SIZE: usize> Drop for ChunkMemory<T, SIZE> {
 
 // SAFETY: `ChunkMemory` represents an owned region of memory (in particular,
 // no two instances of `ChunkMemory` will point to the same region of memory),
-// so it can be sent to another thread.
-unsafe impl<T, const SIZE: usize> Send for ChunkMemory<T, SIZE> {}
+// so it can be sent to another thread as long as `T` is `Send`.
+unsafe impl<T: Send, const SIZE: usize> Send for ChunkMemory<T, SIZE> {}

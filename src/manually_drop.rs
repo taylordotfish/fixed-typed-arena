@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 taylor.fish <contact@taylor.fish>
+ * Copyright (C) 2021-2022 taylor.fish <contact@taylor.fish>
  *
  * This file is part of fixed-typed-arena.
  *
@@ -17,7 +17,7 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use super::Arena;
+use super::inner::ArenaInner;
 use core::mem::ManuallyDrop;
 
 /// Like [`Arena`], but returns references of any lifetime, including
@@ -26,8 +26,10 @@ use core::mem::ManuallyDrop;
 /// This lets the arena be used without being borrowed, but it comes with the
 /// tradeoff that the arena leaks memory unless the unsafe [`drop`](Self::drop)
 /// method is called.
+///
+/// [`Arena`]: super::Arena
 pub struct ManuallyDropArena<T, const CHUNK_SIZE: usize>(
-    ManuallyDrop<Arena<T, CHUNK_SIZE>>,
+    ManuallyDrop<ArenaInner<T, CHUNK_SIZE>>,
 );
 
 impl<T, const CHUNK_SIZE: usize> Default for ManuallyDropArena<T, CHUNK_SIZE> {
@@ -39,7 +41,7 @@ impl<T, const CHUNK_SIZE: usize> Default for ManuallyDropArena<T, CHUNK_SIZE> {
 impl<T, const CHUNK_SIZE: usize> ManuallyDropArena<T, CHUNK_SIZE> {
     /// Creates a new [`ManuallyDropArena`].
     pub fn new() -> Self {
-        Self(ManuallyDrop::new(Arena::new()))
+        Self(ManuallyDrop::new(ArenaInner::new()))
     }
 
     /// Allocates a new item in the arena and initializes it with `value`.
@@ -47,9 +49,9 @@ impl<T, const CHUNK_SIZE: usize> ManuallyDropArena<T, CHUNK_SIZE> {
     /// lifetime, including `'static`, as long as `T` outlives that lifetime.
     #[must_use]
     pub fn alloc<'a>(&mut self, value: T) -> &'a mut T {
-        // SAFETY: `Arena` allocates all items on the heap, and we don't drop
-        // the arena automatically (wrapped in `ManuallyDrop`), so it is safe
-        // to extend the lifetime of the returned reference.
+        // SAFETY: `ArenaInner` allocates all items on the heap, and we don't
+        // drop it automatically (wrapped in `ManuallyDrop`), so it is safe to
+        // extend the lifetime of the returned reference.
         unsafe { &mut *(self.0.alloc(value) as *mut _) }
     }
 
@@ -67,17 +69,17 @@ impl<T, const CHUNK_SIZE: usize> ManuallyDropArena<T, CHUNK_SIZE> {
     /// true:
     ///
     /// * `T` does not have a custom [`Drop`] impl.
-    /// * `T`’s [`Drop`] impl does not directly or indirectly access any data
+    /// * `T`'s [`Drop`] impl does not directly or indirectly access any data
     ///   via the references to other items or parts of items. (This is
     ///   essentially the requirement imposed by [`#[may_dangle]`][dropck].)
     ///
     /// [dropck]: https://doc.rust-lang.org/nomicon/dropck.html
     pub unsafe fn drop(&mut self) {
-        core::mem::take(&mut *self.0);
+        *self.0 = ArenaInner::new();
     }
 
     /// Alias of [`Self::drop`]. Can be used to prevent name collisions when
-    /// this arena is stored in a [`Deref`][core::ops::Deref] type:
+    /// this arena is stored in a [`Deref`](core::ops::Deref) type:
     ///
     /// ```
     /// # use fixed_typed_arena::ManuallyDropArena;
@@ -95,4 +97,10 @@ impl<T, const CHUNK_SIZE: usize> ManuallyDropArena<T, CHUNK_SIZE> {
             self.drop();
         }
     }
+}
+
+// SAFETY: All of `ManuallyDropArena`'s methods take `&mut self`.
+unsafe impl<T, const CHUNK_SIZE: usize> Sync
+    for ManuallyDropArena<T, CHUNK_SIZE>
+{
 }

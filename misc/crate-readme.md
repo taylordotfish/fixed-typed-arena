@@ -58,6 +58,6 @@ this type is that it can be used without being borrowed, but it comes with
 the tradeoff that it will leak memory unless the unsafe [`drop`] method is
 called.
 
-[`Arena`]: https://docs.rs/fixed-typed-arena/latest/fixed_typed_arena/type.Arena.html
-[`ManuallyDropArena`]: https://docs.rs/fixed-typed-arena/latest/fixed_typed_arena/type.ManuallyDropArena.html
-[`drop`]: https://docs.rs/fixed-typed-arena/latest/fixed_typed_arena/type.StaticArena.html#method.drop
+[`Arena`]: https://docs.rs/fixed-typed-arena/0.2/fixed_typed_arena/struct.Arena.html
+[`ManuallyDropArena`]: https://docs.rs/fixed-typed-arena/0.2/fixed_typed_arena/struct.ManuallyDropArena.html
+[`drop`]: https://docs.rs/fixed-typed-arena/0.2/fixed_typed_arena/struct.ManuallyDropArena.html#method.drop

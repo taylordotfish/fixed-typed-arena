@@ -75,7 +75,7 @@ fn ensure_dropped() {
         });
     }
 
-    assert!(!drop_flags.iter().all(Cell::get));
+    assert!(!drop_flags.iter().any(Cell::get));
     core::mem::drop(arena);
     assert!(drop_flags.iter().all(Cell::get));
 }

@@ -19,7 +19,6 @@
 
 use super::chunk::Chunk;
 use core::hint::unreachable_unchecked;
-use core::marker::PhantomData;
 
 // Invariants:
 //
@@ -33,8 +32,6 @@ use core::marker::PhantomData;
 pub struct ArenaInner<T, const CHUNK_SIZE: usize> {
     tail: Option<Chunk<T, CHUNK_SIZE>>,
     tail_len: usize,
-    // Lets dropck know that `T` may be dropped.
-    phantom: PhantomData<T>,
 }
 
 impl<T, const CHUNK_SIZE: usize> ArenaInner<T, CHUNK_SIZE> {
@@ -42,7 +39,6 @@ impl<T, const CHUNK_SIZE: usize> ArenaInner<T, CHUNK_SIZE> {
         Self {
             tail: None,
             tail_len: CHUNK_SIZE,
-            phantom: PhantomData,
         }
     }
 
@@ -119,9 +115,10 @@ impl<T, const CHUNK_SIZE: usize> Drop for ArenaInner<T, CHUNK_SIZE> {
     drop_fn! {}
 }
 
-// SAFETY: This `Drop` impl does directly or indirectly access any data in any
-// `T`, except for calling `T`'s destructor (see [1]), and `Self` contains a
-// `PhantomData<T>` so dropck knows that `T` may be dropped (see [2]).
+// SAFETY: This `Drop` impl does not directly or indirectly access any data in
+// any `T`, except for calling `T`'s destructor (see [1]), and `Self::tail`
+// contains a `PhantomData<Box<T>>` so dropck knows that `T` may be dropped
+// (see [2]).
 //
 // [1]: https://doc.rust-lang.org/nomicon/dropck.html
 // [2]: https://forge.rust-lang.org/libs/maintaining-std.html
