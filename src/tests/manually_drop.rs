@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 taylor.fish <contact@taylor.fish>
+ * Copyright (C) 2021-2022 taylor.fish <contact@taylor.fish>
  *
  * This file is part of fixed-typed-arena.
  *
@@ -17,24 +17,31 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::ManuallyDropArena;
+use crate::manually_drop;
+use crate::{ArenaOptions, ManuallyDropArena};
 use alloc::rc::Rc;
+use alloc::vec::Vec;
 use core::cell::Cell;
 
 #[test]
 fn empty() {
-    ManuallyDropArena::<u8, 16>::new();
+    let arena = ManuallyDropArena::<u8>::new();
+    assert_eq!(arena.len(), 0);
+    assert!(arena.is_empty());
 }
 
 #[test]
 fn basic() {
-    let mut arena = ManuallyDropArena::<_, 16>::new();
-    let item1 = arena.alloc(1_u8);
+    let mut arena = ManuallyDropArena::<_>::new();
+    let item1: &'static mut u8 = arena.alloc(1_u8);
     let item2 = arena.alloc(2_u8);
     let item3 = arena.alloc(3_u8);
+
     assert_eq!(*item1, 1_u8);
     assert_eq!(*item2, 2_u8);
     assert_eq!(*item3, 3_u8);
+    assert_eq!(arena.len(), 3);
+    assert!(!arena.is_empty());
     unsafe {
         arena.drop();
     }
@@ -42,17 +49,32 @@ fn basic() {
 
 #[test]
 fn multiple_chunks() {
-    let mut arena = ManuallyDropArena::<_, 2>::new();
-    let item1 = arena.alloc(1_u8);
-    let item2 = arena.alloc(2_u8);
-    let item3 = arena.alloc(3_u8);
-    let item4 = arena.alloc(4_u8);
-    let item5 = arena.alloc(5_u8);
-    assert_eq!(*item1, 1_u8);
-    assert_eq!(*item2, 2_u8);
-    assert_eq!(*item3, 3_u8);
-    assert_eq!(*item4, 4_u8);
-    assert_eq!(*item5, 5_u8);
+    let mut arena = ManuallyDropArena::<_, 3>::new();
+    let items: Vec<_> = (0..15_u8).map(|i| arena.alloc(i)).collect();
+    let _: &&'static mut u8 = &items[0];
+
+    assert!(items.into_iter().map(|n| *n).eq(0..15));
+    assert_eq!(arena.len(), 15);
+    unsafe {
+        arena.drop();
+    }
+}
+
+#[test]
+fn iter() {
+    type Arena<T> = ManuallyDropArena<
+        T,
+        5,     /* CHUNK_SIZE */
+        false, /* SUPPORTS_POSITIONS */
+        false, /* MUTABLE */
+    >;
+
+    let mut arena = Arena::new();
+    for i in 0..32_u8 {
+        arena.alloc_shared(i);
+    }
+
+    assert!(arena.iter().copied().eq(0..32));
     unsafe {
         arena.drop();
     }
@@ -75,12 +97,12 @@ fn ensure_dropped() {
     let mut arena = ManuallyDropArena::<_, 4>::new();
 
     for flag in drop_flags.iter().cloned() {
-        let _ = arena.alloc(Item {
+        arena.alloc(Item {
             drop_flag: flag,
         });
     }
 
-    assert!(!drop_flags.iter().any(|f| f.get()));
+    assert!(drop_flags.iter().all(|f| !f.get()));
     unsafe {
         arena.drop();
     }
@@ -88,7 +110,7 @@ fn ensure_dropped() {
 }
 
 #[test]
-/// Note: This test causes Miri to report a memory leak.
+#[cfg_attr(miri, ignore = "intentionally leaks memory")]
 fn ensure_leaked() {
     struct Item(u8);
 
@@ -100,6 +122,101 @@ fn ensure_leaked() {
 
     let mut arena = ManuallyDropArena::<_, 4>::new();
     for i in 0..12 {
-        let _ = arena.alloc(Item(i));
+        arena.alloc(Item(i));
     }
+}
+
+#[test]
+fn reuse() {
+    let mut arena = ManuallyDropArena::<_, 3>::new();
+    for i in 0..15_u8 {
+        arena.alloc(i);
+    }
+    unsafe {
+        arena.drop();
+    }
+    for i in 50..60_u8 {
+        arena.alloc(i);
+    }
+    unsafe {
+        arena.drop();
+    }
+}
+
+struct DropArena<T, Options: ArenaOptions<T>>(
+    manually_drop::ManuallyDropArena<T, Options>,
+);
+
+impl<T, Options: ArenaOptions<T>> Drop for DropArena<T, Options> {
+    fn drop(&mut self) {
+        unsafe {
+            self.0.drop();
+        }
+    }
+}
+
+#[test]
+#[should_panic]
+fn bad_position() {
+    type Arena1<T> = ManuallyDropArena<
+        T,
+        5,     /* CHUNK_SIZE */
+        true,  /* SUPPORTS_POSITIONS */
+        false, /* MUTABLE */
+    >;
+
+    type Arena2<T> = ManuallyDropArena<
+        T,
+        4,     /* CHUNK_SIZE */
+        true,  /* SUPPORTS_POSITIONS */
+        false, /* MUTABLE */
+    >;
+
+    let mut arena = Arena1::new();
+    for i in 0..8_u8 {
+        arena.alloc_shared(i);
+    }
+
+    let mut iter = arena.iter();
+    iter.nth(3);
+    let pos = iter.as_position();
+
+    let _drop = DropArena(arena);
+    let mut arena = Arena2::new();
+    for i in 0..8_u8 {
+        arena.alloc_shared(i);
+    }
+
+    let drop = DropArena(arena);
+    drop.0.iter_at(&pos);
+}
+
+#[test]
+#[should_panic]
+fn bad_position_reused_arena() {
+    type Arena<T> = ManuallyDropArena<
+        T,
+        5,     /* CHUNK_SIZE */
+        true,  /* SUPPORTS_POSITIONS */
+        false, /* MUTABLE */
+    >;
+
+    let mut arena = Arena::new();
+    for i in 0..8_u8 {
+        arena.alloc_shared(i);
+    }
+
+    let mut iter = arena.iter();
+    iter.nth(3);
+    let pos = iter.as_position();
+
+    unsafe {
+        arena.drop();
+    }
+    for i in 0..8_u8 {
+        arena.alloc_shared(i);
+    }
+
+    let drop = DropArena(arena);
+    drop.0.iter_at(&pos);
 }

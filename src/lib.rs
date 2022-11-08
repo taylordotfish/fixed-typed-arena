@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 taylor.fish <contact@taylor.fish>
+ * Copyright (C) 2021-2022 taylor.fish <contact@taylor.fish>
  *
  * This file is part of fixed-typed-arena.
  *
@@ -64,34 +64,81 @@
 //! References
 //! ----------
 //!
-//! Items allocated by an [`Arena`] can contain references to other items in
-//! the same arena, but the crate feature `dropck_eyepatch` must be enabled
-//! (which requires Rust nightly), as fixed-typed-arena must use the
-//! [unstable feature of the same name][dropck_eyepatch].
+//! Items allocated by an [`Arena`] can contain references with the same life
+//! as the arena itself, including references to other items, but the crate
+//! feature `dropck_eyepatch` must be enabled. This requires Rust nightly, as
+//! fixed-typed-arena must use the [eponymous unstable language feature][drop].
 //!
-//! [dropck_eyepatch]: https://github.com/rust-lang/rust/issues/34761
+//! [drop]: https://github.com/rust-lang/rust/issues/34761
 //!
 //! Alternatively, you may be able to use a [`ManuallyDropArena`] instead.
 //!
 //! ManuallyDropArena
 //! -----------------
 //!
-//! This crate also provides [`ManuallyDropArena`], a type like [`Arena`] that
+//! This crate also provides [`ManuallyDropArena`], which is like [`Arena`] but
 //! returns references of any lifetime, including `'static`. The advantage of
 //! this type is that it can be used without being borrowed, but it comes with
 //! the tradeoff that it will leak memory unless the unsafe [`drop`] method is
 //! called.
 //!
-//! [`drop`]: ManuallyDropArena::drop
+//! Iteration
+//! ---------
+//!
+//! fixed-typed-arena’s arena types allow iteration over all allocated items.
+//! Safe mutable iteration is provided for [`Arena`], and safe immutable
+//! iteration is provided for all arena types if [`Options::Mutable`] is false.
+//! Unsafe mutable and immutable iteration is provided for all arena types
+//! regardless of options.
+//!
+//! [`Arena`]: arena::Arena
+//! [`ManuallyDropArena`]: manually_drop::ManuallyDropArena
+//! [`drop`]: manually_drop::ManuallyDropArena::drop
 
 extern crate alloc;
 
-mod arena;
 mod chunk;
-mod inner;
-mod manually_drop;
+mod options;
 #[cfg(test)]
 mod tests;
 
-pub use arena::Arena;
-pub use manually_drop::ManuallyDropArena;
+pub mod arena;
+pub mod manually_drop;
+pub use options::{ArenaOptions, Options};
+
+/// Arena iterators.
+pub mod iter {
+    pub use super::manually_drop::iter::*;
+}
+
+#[rustfmt::skip]
+/// Convenience alias for [`arena::Arena`].
+pub type Arena<
+    T,
+    const CHUNK_SIZE: usize = 16,
+    const SUPPORTS_POSITIONS: bool = false,
+    const MUTABLE: bool = true,
+> = arena::Arena<
+    T,
+    Options<
+        CHUNK_SIZE,
+        SUPPORTS_POSITIONS,
+        MUTABLE,
+    >,
+>;
+
+#[rustfmt::skip]
+/// Convenience alias for [`manually_drop::ManuallyDropArena`].
+pub type ManuallyDropArena<
+    T,
+    const CHUNK_SIZE: usize = 16,
+    const SUPPORTS_POSITIONS: bool = false,
+    const MUTABLE: bool = true,
+> = manually_drop::ManuallyDropArena<
+    T,
+    Options<
+        CHUNK_SIZE,
+        SUPPORTS_POSITIONS,
+        MUTABLE,
+    >,
+>;

@@ -40,27 +40,37 @@ assert_eq!(item2.0, 2);
 References
 ----------
 
-Items allocated by an [`Arena`] can contain references to other items in
-the same arena, but the crate feature `dropck_eyepatch` must be enabled
-(which requires Rust nightly), as fixed-typed-arena must use the
-[unstable feature of the same name][dropck_eyepatch].
+Items allocated by an [`Arena`] can contain references with the same life
+as the arena itself, including references to other items, but the crate
+feature `dropck_eyepatch` must be enabled. This requires Rust nightly, as
+fixed-typed-arena must use the [eponymous unstable language feature][drop].
 
-[dropck_eyepatch]: https://github.com/rust-lang/rust/issues/34761
+[drop]: https://github.com/rust-lang/rust/issues/34761
 
 Alternatively, you may be able to use a [`ManuallyDropArena`] instead.
 
 ManuallyDropArena
 -----------------
 
-This crate also provides [`ManuallyDropArena`], a type like [`Arena`] that
+This crate also provides [`ManuallyDropArena`], which is like [`Arena`] but
 returns references of any lifetime, including `'static`. The advantage of
 this type is that it can be used without being borrowed, but it comes with
 the tradeoff that it will leak memory unless the unsafe [`drop`] method is
 called.
 
-[`Arena`]: https://docs.rs/fixed-typed-arena/0.2/fixed_typed_arena/struct.Arena.html
-[`ManuallyDropArena`]: https://docs.rs/fixed-typed-arena/0.2/fixed_typed_arena/struct.ManuallyDropArena.html
-[`drop`]: https://docs.rs/fixed-typed-arena/0.2/fixed_typed_arena/struct.ManuallyDropArena.html#method.drop
+Iteration
+---------
+
+fixed-typed-arena’s arena types allow iteration over all allocated items.
+Safe mutable iteration is provided for [`Arena`], and safe immutable
+iteration is provided for all arena types if [`Options::Mutable`] is false.
+Unsafe mutable and immutable iteration is provided for all arena types
+regardless of options.
+
+[`Arena`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/arena/struct.Arena.html
+[`ManuallyDropArena`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/manually_drop/struct.ManuallyDropArena.html
+[`drop`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/manually_drop/struct.ManuallyDropArena.html#method.drop
+[`Options::Mutable`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/struct.Options.html#associatedtype.Mutable
 
 Documentation
 -------------
