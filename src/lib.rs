@@ -98,7 +98,7 @@
 extern crate alloc;
 
 mod chunk;
-mod options;
+pub mod options;
 #[cfg(test)]
 mod tests;
 

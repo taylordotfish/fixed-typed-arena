@@ -237,8 +237,15 @@ where
 }
 
 // SAFETY: This type has no `&self` methods that access shared data or fields
-// with non-`Sync` interior mutability.
-unsafe impl<T, Options: ArenaOptions<T>> Sync for Iter<'_, T, Options> {}
+// with non-`Sync` interior mutability, but `T` must be `Sync` to match the
+// `Send` impl, since this type implements `Clone`, effectively allowing it to
+// be sent.
+unsafe impl<T, Options> Sync for Iter<'_, T, Options>
+where
+    T: Sync,
+    Options: ArenaOptions<T>,
+{
+}
 
 impl<'a, T, Options> IntoIterator for &'a ManuallyDropArena<T, Options>
 where

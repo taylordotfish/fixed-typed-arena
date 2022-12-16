@@ -20,7 +20,7 @@
 //! An arena that returns references with arbitrary lifetimes.
 
 use super::chunk::ChunkRef;
-use super::options::{Bool, ChunkSize, SupportsPositions};
+use super::options::{Bool, ChunkSizePriv, SupportsPositionsPriv};
 use super::ArenaOptions;
 use alloc::alloc::handle_alloc_error;
 use alloc::boxed::Box;
@@ -35,9 +35,11 @@ pub(crate) mod iter;
 use iter::{IntoIter, Iter, IterMut, IterPtr, Position};
 
 type Array<T, Options> =
-    <<Options as ArenaOptions<T>>::ChunkSize as ChunkSize<T>>::Array;
+    <<Options as ArenaOptions<T>>::ChunkSize as ChunkSizePriv<T>>::Array;
+type SupportsPositions<T, Options> =
+    <Options as ArenaOptions<T>>::SupportsPositions;
 type ArenaRc<T, Options> =
-    <<Options as ArenaOptions<T>>::SupportsPositions as SupportsPositions>::Rc;
+    <SupportsPositions<T, Options> as SupportsPositionsPriv>::Rc;
 type ArenaChunk<T, Options> = ChunkRef<T, Array<T, Options>>;
 
 /// Checks whether `old` and `new` point to the same allocation (see
@@ -124,15 +126,13 @@ impl<T, Options: ArenaOptions<T>> ManuallyDropArena<T, Options> {
 
     fn alloc_ptr(&mut self, value: T) -> NonNull<T> {
         self.try_alloc_ptr(value).unwrap_or_else(|| {
-            handle_alloc_error(ArenaChunk::<T, Options>::LAYOUT)
+            handle_alloc_error(ArenaChunk::<T, Options>::LAYOUT);
         })
     }
 
     fn try_alloc_ptr(&mut self, value: T) -> Option<NonNull<T>> {
         self.ensure_free_space().ok()?;
-        <Options::SupportsPositions as SupportsPositions>::init_rc(
-            &mut self.rc,
-        );
+        SupportsPositions::<T, Options>::init_rc(&mut self.rc);
 
         let chunk = self.tail.as_mut().unwrap_or_else(|| {
             // SAFETY: `Self::ensure_free_space` ensures that `self.tail`
@@ -336,8 +336,9 @@ impl<T, Options: ArenaOptions<T>> ManuallyDropArena<T, Options> {
     ///
     /// # Safety
     ///
-    /// There must be no mutable references to items (or parts of items) in
-    /// this arena or instances of [`IterMut`] for this arena.
+    /// There must be no mutable references (or references derived from mutable
+    /// references) to items (or parts of items) in this arena or instances of
+    /// [`IterMut`] for this arena.
     pub unsafe fn iter_unchecked<'a>(&self) -> Iter<'a, T, Options> {
         Iter {
             inner: self.iter_ptr::<false>(),

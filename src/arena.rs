@@ -55,12 +55,16 @@ impl<T, Options: ArenaOptions<T>> Arena<T, Options> {
         Self(Default::default())
     }
 
+    fn inner(&self) -> &ManuallyDropArena<T, Options> {
+        // SAFETY: No `&self` methods of `ManuallyDropArena` can possibly call
+        // any methods of `Self`, which ensures we do not concurrently mutably
+        // borrow the data in the `UnsafeCell`.
+        unsafe { &*self.0.get() }
+    }
+
     /// Returns the total number of items that have been allocated.
     pub fn len(&self) -> usize {
-        // SAFETY: `ManuallyDropArena::len` does not run any code that could
-        // possibly call any methods of `Self`, which ensures that we do not
-        // mutably borrow the data in the `UnsafeCell`.
-        unsafe { &*self.0.get() }.len()
+        self.inner().len()
     }
 
     /// Checks whether the arena is empty.
@@ -127,20 +131,19 @@ impl<T, Options: ArenaOptions<T>> Arena<T, Options> {
     where
         Options: ArenaOptions<T, Mutable = Bool<false>>,
     {
-        // SAFETY: This type's design guarantees no mutable references to items
-        // exist.
-        unsafe { &*self.0.get() }.iter()
+        self.inner().iter()
     }
 
     /// Returns an iterator over the items in this arena.
     ///
     /// # Safety
     ///
-    /// There must be no mutable references to items (or parts of items) in
-    /// this arena or instances of [`IterMut`] for this arena.
+    /// There must be no mutable references (or references derived from mutable
+    /// references) to items (or parts of items) in this arena or instances of
+    /// [`IterMut`] for this arena.
     pub unsafe fn iter_unchecked(&self) -> Iter<'_, T, Options> {
         // SAFETY: Checked by caller.
-        unsafe { (*self.0.get()).iter_unchecked() }
+        unsafe { self.inner().iter_unchecked() }
     }
 
     /// Returns a mutable iterator over the items in this arena.
@@ -163,9 +166,7 @@ where
     where
         Options: ArenaOptions<T, Mutable = Bool<false>>,
     {
-        // SAFETY: This type's design guarantees no mutable references to items
-        // exist.
-        unsafe { &*self.0.get() }.iter_at(position)
+        self.inner().iter_at(position)
     }
 
     /// Returns an iterator starting at the specified position.
@@ -182,7 +183,7 @@ where
         position: &Position,
     ) -> Iter<'_, T, Options> {
         // SAFETY: Checked by caller.
-        unsafe { (*self.0.get()).iter_at_unchecked(position) }
+        unsafe { self.inner().iter_at_unchecked(position) }
     }
 
     /// Returns a mutable iterator starting at the specified position.

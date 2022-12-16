@@ -17,37 +17,67 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
+//! Arena options.
+
 use alloc::sync::Arc;
 use core::convert::Infallible;
+use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 
+/// Represents a [`usize`].
 pub struct Usize<const N: usize>(());
+
+/// Represents a [`bool`].
 pub struct Bool<const B: bool>(());
 
-pub trait ChunkSize<T> {
-    type Array;
+mod detail {
+    pub trait ChunkSizePriv<T> {
+        type Array;
+    }
+
+    pub trait SupportsPositionsPriv {
+        type Rc: Clone + Send + Sync;
+        fn init_rc(_rc: &mut Option<Self::Rc>) {}
+    }
+
+    pub trait MutablePriv {}
 }
 
-pub trait SupportsPositions {
-    type Rc: Clone + Send + Sync;
-    fn init_rc(_rc: &mut Option<Self::Rc>) {}
-}
+pub(crate) use detail::*;
 
-impl<T, const N: usize> ChunkSize<T> for Usize<N> {
+/// Trait bound on [`ArenaOptions::ChunkSize`].
+pub trait ChunkSize<T>: ChunkSizePriv<T> {}
+
+impl<T, const N: usize> ChunkSize<T> for Usize<N> {}
+
+impl<T, const N: usize> ChunkSizePriv<T> for Usize<N> {
     type Array = [MaybeUninit<T>; N];
 }
 
-impl SupportsPositions for Bool<false> {
+/// Trait bound on [`ArenaOptions::SupportsPositions`].
+pub trait SupportsPositions: SupportsPositionsPriv {}
+
+impl SupportsPositions for Bool<false> {}
+impl SupportsPositions for Bool<true> {}
+
+impl SupportsPositionsPriv for Bool<false> {
     type Rc = Infallible;
 }
 
-impl SupportsPositions for Bool<true> {
+impl SupportsPositionsPriv for Bool<true> {
     type Rc = Arc<()>;
 
     fn init_rc(rc: &mut Option<Self::Rc>) {
         rc.get_or_insert_with(Arc::default);
     }
 }
+
+/// Trait bound on [`ArenaOptions::Mutable`].
+pub trait Mutable: MutablePriv {}
+
+impl Mutable for Bool<false> {}
+impl Mutable for Bool<true> {}
+impl<const B: bool> MutablePriv for Bool<B> {}
 
 mod sealed {
     pub trait Sealed {}
@@ -71,48 +101,69 @@ pub trait ArenaOptions<T>: sealed::Sealed {
     type SupportsPositions: SupportsPositions;
 
     /// If true, the arena is able to return mutable references.
-    type Mutable;
+    type Mutable: Mutable;
 }
 
+#[rustfmt::skip]
 /// Arena options.
 ///
-/// Const parameters correspond to associated types in [`ArenaOptions`] as
-/// follows; see those associated types for documentation:
+/// This type implements [`ArenaOptions`]. Const parameters correspond to
+/// associated types in [`ArenaOptions`] as follows; see those associated types
+/// for documentation:
 ///
-/// * `CHUNK_SIZE`: [`ArenaOptions::ChunkSize`]
-/// * `SUPPORTS_POSITIONS`: [`ArenaOptions::SupportsPositions`]
-/// * `MUTABLE`: [`ArenaOptions::Mutable`]
-pub struct Options<
+/// Const parameter      | Associated type
+/// -------------------- | -----------------------------------
+/// `CHUNK_SIZE`         | [`ArenaOptions::ChunkSize`]
+/// `SUPPORTS_POSITIONS` | [`ArenaOptions::SupportsPositions`]
+/// `MUTABLE`            | [`ArenaOptions::Mutable`]
+pub type Options<
     const CHUNK_SIZE: usize = 16,
     const SUPPORTS_POSITIONS: bool = false,
     const MUTABLE: bool = true,
+> = TypedOptions<
+    Usize<CHUNK_SIZE>,
+    Bool<SUPPORTS_POSITIONS>,
+    Bool<MUTABLE>,
 >;
+
+/// Like [`Options`], but uses types instead of const parameters.
+///
+/// [`Options`] is actually a type alias of this type.
+#[allow(clippy::type_complexity)]
+#[rustfmt::skip]
+pub struct TypedOptions<
+    ChunkSize = Usize<16>,
+    SupportsPositions = Bool<false>,
+    Mutable = Bool<true>,
+>(PhantomData<fn() -> (
+    ChunkSize,
+    SupportsPositions,
+    Mutable,
+)>);
 
 #[rustfmt::skip]
 impl<
-    const CHUNK_SIZE: usize,
-    const SUPPORTS_POSITIONS: bool,
-    const MUTABLE: bool,
-> sealed::Sealed for Options<
-    CHUNK_SIZE,
-    SUPPORTS_POSITIONS,
-    MUTABLE,
+    ChunkSize,
+    SupportsPositions,
+    Mutable,
+> sealed::Sealed for TypedOptions<
+    ChunkSize,
+    SupportsPositions,
+    Mutable,
 > {}
 
 #[rustfmt::skip]
 impl<
     T,
-    const CHUNK_SIZE: usize,
-    const SUPPORTS_POSITIONS: bool,
-    const MUTABLE: bool,
-> ArenaOptions<T> for Options<
-    CHUNK_SIZE,
-    SUPPORTS_POSITIONS,
-    MUTABLE,
-> where
-    Bool<SUPPORTS_POSITIONS>: SupportsPositions,
-{
-    type ChunkSize = Usize<CHUNK_SIZE>;
-    type SupportsPositions = Bool<SUPPORTS_POSITIONS>;
-    type Mutable = Bool<MUTABLE>;
+    ChunkSize: self::ChunkSize<T>,
+    SupportsPositions: self::SupportsPositions,
+    Mutable: self::Mutable,
+> ArenaOptions<T> for TypedOptions<
+    ChunkSize,
+    SupportsPositions,
+    Mutable,
+> {
+    type ChunkSize = ChunkSize;
+    type SupportsPositions = SupportsPositions;
+    type Mutable = Mutable;
 }
