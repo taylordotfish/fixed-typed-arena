@@ -147,34 +147,6 @@ where
     }
 }
 
-macro_rules! impl_drop_for_iter_ptr {
-    ($($unsafe:ident)? $(#[$attr:meta])*) => {
-        $($unsafe)? impl<
-            $(#[$attr])* T,
-            $(#[$attr])* Options: $crate::ArenaOptions<T>,
-            const DROP: bool,
-        > ::core::ops::Drop
-            for $crate::manually_drop::IterPtr<T, Options, DROP>
-        {
-            fn drop(&mut self) {
-                if !DROP {
-                    return;
-                }
-                for item in self {
-                    // SAFETY: This type yields initialized, properly aligned
-                    // pointers.
-                    unsafe {
-                        item.as_ptr().drop_in_place();
-                    }
-                }
-            }
-        }
-    };
-}
-
-#[cfg(not(feature = "dropck_eyepatch"))]
-impl_drop_for_iter_ptr!();
-
 // SAFETY: This `Drop` impl does not directly or indirectly access any data in
 // any `T` or `Options` (or associated types in `Options`) except for calling
 // their destructors (see [1]), and `Self` contains a `PhantomData<Box<T>>` so
@@ -183,8 +155,28 @@ impl_drop_for_iter_ptr!();
 // [1]: https://doc.rust-lang.org/nomicon/dropck.html
 // [2]: https://forge.rust-lang.org/libs/maintaining-std.html
 //      #is-there-a-manual-drop-implementation
-#[cfg(feature = "dropck_eyepatch")]
-impl_drop_for_iter_ptr!(unsafe #[may_dangle]);
+#[cfg_attr(feature = "dropck_eyepatch", add_syntax::prepend(unsafe))]
+impl<
+    #[cfg_attr(feature = "dropck_eyepatch", may_dangle)] T,
+    #[cfg_attr(feature = "dropck_eyepatch", may_dangle)] Options,
+    const DROP: bool,
+> Drop for IterPtr<T, Options, DROP>
+where
+    Options: ArenaOptions<T>,
+{
+    fn drop(&mut self) {
+        if !DROP {
+            return;
+        }
+        for item in self {
+            // SAFETY: This type yields initialized, properly aligned
+            // pointers.
+            unsafe {
+                item.as_ptr().drop_in_place();
+            }
+        }
+    }
+}
 
 /// An iterator over the items in an arena.
 pub struct Iter<'a, T, Options: ArenaOptions<T>> {

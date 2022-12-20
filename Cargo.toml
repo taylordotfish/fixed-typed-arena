@@ -1,6 +1,6 @@
 [package]
 name = "fixed-typed-arena"
-version = "0.3.1"
+version = "0.3.2-dev"
 authors = ["taylor.fish <contact@taylor.fish>"]
 edition = "2018"
 rust-version = "1.59"
@@ -14,4 +14,8 @@ keywords = ["arena", "constant-time", "fixed-size", "latency", "typed-arena"]
 categories = ["memory-management", "no-std"]
 
 [features]
-dropck_eyepatch = []
+dropck_eyepatch = ["add-syntax"]
+
+[dependencies.add-syntax]
+version = "0.1"
+optional = true

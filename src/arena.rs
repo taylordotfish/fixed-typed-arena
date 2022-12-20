@@ -209,26 +209,6 @@ where
 {
 }
 
-macro_rules! impl_drop_for_arena {
-    ($($unsafe:ident)? $(#[$attr:meta])*) => {
-        $($unsafe)? impl<
-            $(#[$attr])* T,
-            $(#[$attr])* Options: $crate::ArenaOptions<T>,
-        > ::core::ops::Drop for $crate::arena::Arena<T, Options> {
-            fn drop(&mut self) {
-                // SAFETY: `Arena` doesn't hand out references or iterators
-                // that live longer than itself.
-                unsafe {
-                    self.0.get_mut().drop();
-                }
-            }
-        }
-    };
-}
-
-#[cfg(not(feature = "dropck_eyepatch"))]
-impl_drop_for_arena!();
-
 // SAFETY: This `Drop` impl does not directly or indirectly access any data in
 // any `T` or `Array`, except for calling their destructors (see [1]), and
 // `Self` (via `ManuallyDropArena`) contains a `PhantomData<Box<T>>` so dropck
@@ -237,8 +217,22 @@ impl_drop_for_arena!();
 // [1]: https://doc.rust-lang.org/nomicon/dropck.html
 // [2]: https://forge.rust-lang.org/libs/maintaining-std.html
 //      #is-there-a-manual-drop-implementation
-#[cfg(feature = "dropck_eyepatch")]
-impl_drop_for_arena!(unsafe #[may_dangle]);
+#[cfg_attr(feature = "dropck_eyepatch", add_syntax::prepend(unsafe))]
+impl<
+    #[cfg_attr(feature = "dropck_eyepatch", may_dangle)] T,
+    #[cfg_attr(feature = "dropck_eyepatch", may_dangle)] Options,
+> Drop for Arena<T, Options>
+where
+    Options: ArenaOptions<T>,
+{
+    fn drop(&mut self) {
+        // SAFETY: `Arena` doesn't hand out references or iterators
+        // that live longer than itself.
+        unsafe {
+            self.0.get_mut().drop();
+        }
+    }
+}
 
 impl<'a, T, Options> IntoIterator for &'a Arena<T, Options>
 where
