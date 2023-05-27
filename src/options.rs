@@ -89,11 +89,15 @@ mod sealed {
 /// trait.
 pub trait ArenaOptions<T>: sealed::Sealed {
     /// The number of elements of type `T` that each chunk can hold.
+    ///
+    /// *Default:* 16
     type ChunkSize: ChunkSize<T>;
 
     /// If true, enables the use of [`Position`]s, allowing methods like
     /// [`IterMut::as_position`] and [`Arena::iter_mut_at`] to be called, at
     /// the cost of using slightly more memory.
+    ///
+    /// *Default:* false
     ///
     /// [`Position`]: crate::iter::Position
     /// [`IterMut::as_position`]: crate::iter::IterMut::as_position
@@ -101,10 +105,11 @@ pub trait ArenaOptions<T>: sealed::Sealed {
     type SupportsPositions: SupportsPositions;
 
     /// If true, the arena is able to return mutable references.
+    ///
+    /// *Default:* true
     type Mutable: Mutable;
 }
 
-#[rustfmt::skip]
 /// Arena options.
 ///
 /// This type implements [`ArenaOptions`]. Const parameters correspond to
@@ -116,6 +121,7 @@ pub trait ArenaOptions<T>: sealed::Sealed {
 /// `CHUNK_SIZE`         | [`ArenaOptions::ChunkSize`]
 /// `SUPPORTS_POSITIONS` | [`ArenaOptions::SupportsPositions`]
 /// `MUTABLE`            | [`ArenaOptions::Mutable`]
+#[rustfmt::skip]
 pub type Options<
     const CHUNK_SIZE: usize = 16,
     const SUPPORTS_POSITIONS: bool = false,
