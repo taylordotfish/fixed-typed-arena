@@ -49,7 +49,6 @@ pub(crate) use detail::*;
 pub trait ChunkSize<T>: ChunkSizePriv<T> {}
 
 impl<T, const N: usize> ChunkSize<T> for Usize<N> {}
-
 impl<T, const N: usize> ChunkSizePriv<T> for Usize<N> {
     type Array = [MaybeUninit<T>; N];
 }
