@@ -21,10 +21,10 @@
 
 use super::iter::{IntoIter, Iter, IterMut, Position};
 use super::manually_drop::ManuallyDropArena;
-use super::options::Bool;
 use super::ArenaOptions;
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
+use integral_constant::Bool;
 
 /// An arena that allocates items of type `T` in non-amortized O(1) (constant)
 /// time.

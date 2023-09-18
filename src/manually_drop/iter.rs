@@ -20,13 +20,13 @@
 use super::ManuallyDropArena;
 use super::{ArenaChunk, ArenaRc};
 use crate::chunk::ChunkRef;
-use crate::options::Bool;
 use crate::ArenaOptions;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use core::iter::FusedIterator;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
+use integral_constant::Bool;
 
 /// A position in an arena.
 ///

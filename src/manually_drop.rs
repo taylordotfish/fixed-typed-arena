@@ -20,7 +20,7 @@
 //! An arena that returns references with arbitrary lifetimes.
 
 use super::chunk::ChunkRef;
-use super::options::{Bool, ChunkSizePriv, SupportsPositionsPriv};
+use super::options::{ChunkSizePriv, SupportsPositionsPriv};
 use super::ArenaOptions;
 use alloc::alloc::handle_alloc_error;
 use alloc::boxed::Box;
@@ -30,6 +30,7 @@ use core::hint::unreachable_unchecked;
 use core::marker::PhantomData;
 use core::mem;
 use core::ptr::{self, NonNull};
+use integral_constant::Bool;
 
 pub(crate) mod iter;
 use iter::{IntoIter, Iter, IterMut, IterPtr, Position};

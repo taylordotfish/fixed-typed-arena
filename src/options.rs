@@ -24,11 +24,9 @@ use core::convert::Infallible;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 
-/// Represents a [`usize`].
-pub struct Usize<const N: usize>(());
-
-/// Represents a [`bool`].
-pub struct Bool<const B: bool>(());
+/// Re-exported for backward compatibility.
+#[doc(hidden)]
+pub use integral_constant::{Bool, Usize};
 
 mod detail {
     pub trait ChunkSizePriv<T> {

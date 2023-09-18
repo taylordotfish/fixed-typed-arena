@@ -1,6 +1,6 @@
 [package]
 name = "fixed-typed-arena"
-version = "0.3.3-dev"
+version = "0.3.3"
 edition = "2018"
 rust-version = "1.59"
 description = """A typed arena that uses fixed-size chunks to ensure \
@@ -14,6 +14,9 @@ categories = ["memory-management", "no-std"]
 
 [features]
 dropck_eyepatch = ["add-syntax"]
+
+[dependencies]
+integral_constant = "0.1"
 
 [dependencies.add-syntax]
 version = "0.1"

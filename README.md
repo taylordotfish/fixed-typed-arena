@@ -75,7 +75,7 @@ regardless of options.
 Documentation
 -------------
 
-[Documentation is available on docs.rs.](https://docs.rs/fixed-typed-arena)
+[Documentation is available on docs.rs.](https://docs.rs/fixed-typed-arena/0.3)
 
 License
 -------
