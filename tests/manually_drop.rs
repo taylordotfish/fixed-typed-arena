@@ -17,11 +17,10 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::manually_drop;
-use crate::{ArenaOptions, ManuallyDropArena};
-use alloc::rc::Rc;
-use alloc::vec::Vec;
-use core::cell::Cell;
+use fixed_typed_arena::manually_drop;
+use fixed_typed_arena::{ArenaOptions, ManuallyDropArena};
+use std::cell::Cell;
+use std::rc::Rc;
 
 #[test]
 fn empty() {
@@ -64,9 +63,9 @@ fn multiple_chunks() {
 fn iter() {
     type Arena<T> = ManuallyDropArena<
         T,
-        5,     /* CHUNK_SIZE */
-        false, /* SUPPORTS_POSITIONS */
-        false, /* MUTABLE */
+        /* CHUNK_SIZE */ 5,
+        /* SUPPORTS_POSITIONS */ false,
+        /* MUTABLE */ false,
     >;
 
     let mut arena = Arena::new();
@@ -160,16 +159,16 @@ impl<T, Options: ArenaOptions<T>> Drop for DropArena<T, Options> {
 fn bad_position() {
     type Arena1<T> = ManuallyDropArena<
         T,
-        5,     /* CHUNK_SIZE */
-        true,  /* SUPPORTS_POSITIONS */
-        false, /* MUTABLE */
+        /* CHUNK_SIZE */ 5,
+        /* SUPPORTS_POSITIONS */ true,
+        /* MUTABLE */ false,
     >;
 
     type Arena2<T> = ManuallyDropArena<
         T,
-        4,     /* CHUNK_SIZE */
-        true,  /* SUPPORTS_POSITIONS */
-        false, /* MUTABLE */
+        /* CHUNK_SIZE */ 4,
+        /* SUPPORTS_POSITIONS */ true,
+        /* MUTABLE */ false,
     >;
 
     let mut arena = Arena1::new();
@@ -196,9 +195,9 @@ fn bad_position() {
 fn bad_position_reused_arena() {
     type Arena<T> = ManuallyDropArena<
         T,
-        5,     /* CHUNK_SIZE */
-        true,  /* SUPPORTS_POSITIONS */
-        false, /* MUTABLE */
+        /* CHUNK_SIZE */ 5,
+        /* SUPPORTS_POSITIONS */ true,
+        /* MUTABLE */ false,
     >;
 
     let mut arena = Arena::new();

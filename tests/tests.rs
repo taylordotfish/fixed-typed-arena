@@ -17,11 +17,8 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::Arena;
-use alloc::vec::Vec;
-use core::cell::Cell;
-
-mod manually_drop;
+use fixed_typed_arena::Arena;
+use std::cell::Cell;
 
 #[test]
 fn empty() {
@@ -109,9 +106,9 @@ fn zero_chunk_size() {
 fn iter() {
     type Arena<T> = self::Arena<
         T,
-        6,     /* CHUNK_SIZE */
-        false, /* SUPPORTS_POSITIONS */
-        false, /* MUTABLE */
+        /* CHUNK_SIZE */ 6,
+        /* SUPPORTS_POSITIONS */ false,
+        /* MUTABLE */ false,
     >;
 
     let arena = Arena::new();

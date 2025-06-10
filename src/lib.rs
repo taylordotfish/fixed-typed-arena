@@ -99,8 +99,6 @@ extern crate alloc;
 
 mod chunk;
 pub mod options;
-#[cfg(test)]
-mod tests;
 
 pub mod arena;
 pub mod manually_drop;
