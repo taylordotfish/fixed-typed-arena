@@ -19,9 +19,9 @@
 
 //! An arena that returns references with arbitrary lifetimes.
 
+use super::ArenaOptions;
 use super::chunk::ChunkRef;
 use super::options::{ChunkSizePriv, SupportsPositionsPriv};
-use super::ArenaOptions;
 use alloc::alloc::handle_alloc_error;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
@@ -46,6 +46,7 @@ type ArenaChunk<T, Options> = ChunkRef<T, Array<T, Options>>;
 /// Checks whether `old` and `new` point to the same allocation (see
 /// [`Arc::ptr_eq`]), but allows `old` to be [`None`], even if `new` is
 /// [`Some`].
+#[allow(clippy::ref_option)]
 fn valid_rc_update<T>(old: &Option<Arc<T>>, new: &Option<Arc<T>>) -> bool {
     match (old, new) {
         (Some(old), Some(new)) => Arc::ptr_eq(old, new),

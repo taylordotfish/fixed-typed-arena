@@ -21,7 +21,7 @@ use alloc::alloc::Layout;
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 use core::mem::{self, MaybeUninit};
-use core::ptr::{addr_of_mut, NonNull};
+use core::ptr::{NonNull, addr_of_mut};
 
 struct Chunk<T, Array> {
     items: MaybeUninit<Array>,

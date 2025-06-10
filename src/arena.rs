@@ -19,9 +19,9 @@
 
 //! A typed arena that allocates items in non-amortized constant time.
 
+use super::ArenaOptions;
 use super::iter::{IntoIter, Iter, IterMut, Position};
 use super::manually_drop::ManuallyDropArena;
-use super::ArenaOptions;
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
 use integral_constant::Bool;

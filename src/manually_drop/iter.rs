@@ -19,8 +19,8 @@
 
 use super::ManuallyDropArena;
 use super::{ArenaChunk, ArenaRc};
-use crate::chunk::ChunkRef;
 use crate::ArenaOptions;
+use crate::chunk::ChunkRef;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use core::iter::FusedIterator;
@@ -101,6 +101,7 @@ where
 
         if end || self.index >= ArenaChunk::<T, Options>::CAPACITY {
             let next = (!end).then(|| chunk.next()).flatten();
+            #[allow(clippy::assigning_clones)]
             if DROP || next.is_some() {
                 self.index = 0;
                 self.chunk = next.clone();
