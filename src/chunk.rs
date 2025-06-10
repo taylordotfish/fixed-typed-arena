@@ -42,6 +42,9 @@ impl<T, Array> PartialEq for ChunkRef<T, Array> {
 
 impl<T, Array> Eq for ChunkRef<T, Array> {}
 
+// This type is not `Copy` in order to make it easier to track clones, since
+// `Self::dealloc` has safety requirements that require knowledge of all such
+// clones that may exist.
 impl<T, Array> Clone for ChunkRef<T, Array> {
     fn clone(&self) -> Self {
         Self(self.0)
