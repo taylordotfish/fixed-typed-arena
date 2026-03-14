@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.3.4
+-----
+
+* `manually_drop::ManuallyDropArena` is now `arena::ManuallyDropArena`. For
+  compatibility, `manually_drop` still provides `ManuallyDropArena` via a
+  re-export, but the module is now deprecated.
+* Various internal code improvements.
+
 0.3.3
 -----
 

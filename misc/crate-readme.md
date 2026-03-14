@@ -68,6 +68,6 @@ Unsafe mutable and immutable iteration is provided for all arena types
 regardless of options.
 
 [`Arena`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/arena/struct.Arena.html
-[`ManuallyDropArena`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/manually_drop/struct.ManuallyDropArena.html
-[`drop`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/manually_drop/struct.ManuallyDropArena.html#method.drop
+[`ManuallyDropArena`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/arena/struct.ManuallyDropArena.html
+[`drop`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/arena/struct.ManuallyDropArena.html#method.drop
 [`Options::Mutable`]: https://docs.rs/fixed-typed-arena/0.3/fixed_typed_arena/struct.Options.html#associatedtype.Mutable
