@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 taylor.fish <contact@taylor.fish>
+ * Copyright (C) 2021-2022, 2026 taylor.fish <contact@taylor.fish>
  *
  * This file is part of fixed-typed-arena.
  *
@@ -101,12 +101,24 @@ mod chunk;
 pub mod options;
 
 pub mod arena;
-pub mod manually_drop;
 pub use options::{ArenaOptions, Options};
 
 /// Arena iterators.
 pub mod iter {
-    pub use super::manually_drop::iter::*;
+    pub use super::arena::iter::*;
+}
+
+#[deprecated(
+    since = "0.3.4",
+    note = "manually_drop::ManuallyDropArena is now arena::ManuallyDropArena"
+)]
+/// Deprecated module; all types are now in [`arena`].
+///
+/// For compatibility, this module re-exports [`arena::ManuallyDropArena`].
+/// The re-export is marked `#[doc(inline)]` so old links aren't broken.
+pub mod manually_drop {
+    #[doc(inline)]
+    pub use super::arena::ManuallyDropArena;
 }
 
 #[rustfmt::skip]
@@ -126,7 +138,7 @@ pub type Arena<
 >;
 
 #[rustfmt::skip]
-/// Convenience alias for [`manually_drop::ManuallyDropArena`].
+/// Convenience alias for [`arena::ManuallyDropArena`].
 pub type ManuallyDropArena<
     T,
     const CHUNK_SIZE: usize = 16,

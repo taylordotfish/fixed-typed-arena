@@ -17,7 +17,7 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use fixed_typed_arena::manually_drop;
+use fixed_typed_arena::arena;
 use fixed_typed_arena::{ArenaOptions, ManuallyDropArena};
 use std::cell::Cell;
 use std::rc::Rc;
@@ -143,7 +143,7 @@ fn reuse() {
 }
 
 struct DropArena<T, Options: ArenaOptions<T>>(
-    manually_drop::ManuallyDropArena<T, Options>,
+    arena::ManuallyDropArena<T, Options>,
 );
 
 impl<T, Options: ArenaOptions<T>> Drop for DropArena<T, Options> {

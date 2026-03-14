@@ -17,11 +17,11 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-//! An arena that returns references with arbitrary lifetimes.
+//! An arena that requires items to be dropped manually.
 
-use super::ArenaOptions;
-use super::chunk::ChunkRef;
-use super::options::{ChunkSizePriv, SupportsPositionsPriv};
+use crate::ArenaOptions;
+use crate::chunk::ChunkRef;
+use crate::options::{ChunkSizePriv, SupportsPositionsPriv};
 use alloc::alloc::handle_alloc_error;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
@@ -70,8 +70,8 @@ fn valid_rc_update<T>(old: &Option<Arc<T>>, new: &Option<Arc<T>>) -> bool {
 /// tradeoff that the arena leaks memory unless the unsafe [`drop`](Self::drop)
 /// method is called.
 ///
-/// [`Arena`]: super::arena::Arena
-pub struct ManuallyDropArena<T, Options: ArenaOptions<T> = super::Options> {
+/// [`Arena`]: super::Arena
+pub struct ManuallyDropArena<T, Options: ArenaOptions<T> = crate::Options> {
     rc: Option<ArenaRc<T, Options>>,
     head: Option<ArenaChunk<T, Options>>,
     tail: Option<ArenaChunk<T, Options>>,

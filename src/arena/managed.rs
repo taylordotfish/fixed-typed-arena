@@ -17,20 +17,21 @@
  * along with fixed-typed-arena. If not, see <https://www.gnu.org/licenses/>.
  */
 
-//! A typed arena that allocates items in non-amortized constant time.
+//! The standard arena type that fully manages memory: items are dropped when
+//! the arena is dropped.
 
-use super::ArenaOptions;
+use super::ManuallyDropArena;
 use super::iter::{IntoIter, Iter, IterMut, Position};
-use super::manually_drop::ManuallyDropArena;
+use crate::ArenaOptions;
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
 use integral_constant::Bool;
 
-/// An arena that allocates items of type `T` in non-amortized O(1) (constant)
-/// time.
+/// A typed arena that allocates items in non-amortized O(1) (constant) time.
 ///
-/// The arena allocates fixed-size chunks of memory, each able to hold up to
-/// [`Options::ChunkSize`] items. All items are allocated on the heap.
+/// The arena allocates items of type `T` from fixed-size chunks of memory,
+/// each able to hold up to [`Options::ChunkSize`] items. All items are
+/// allocated on the heap.
 ///
 /// # Panics
 ///
@@ -39,7 +40,7 @@ use integral_constant::Bool;
 ///
 /// [`Options::ChunkSize`]: ArenaOptions::ChunkSize
 /// [size]: core::mem::size_of
-pub struct Arena<T, Options: ArenaOptions<T> = super::Options>(
+pub struct Arena<T, Options: ArenaOptions<T> = crate::Options>(
     ManuallyDrop<UnsafeCell<ManuallyDropArena<T, Options>>>,
 );
 
