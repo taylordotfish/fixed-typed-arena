@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 taylor.fish <contact@taylor.fish>
+ * Copyright (C) 2021-2022, 2026 taylor.fish <contact@taylor.fish>
  *
  * This file is part of fixed-typed-arena.
  *
@@ -331,6 +331,8 @@ impl<T, Options: ArenaOptions<T>> ManuallyDropArena<T, Options> {
     where
         Options: ArenaOptions<T, Mutable = Bool<false>>,
     {
+        // SAFETY: Mutable references cannot exist when `Options::Mutable` is
+        // false.
         unsafe { self.iter_unchecked() }
     }
 
@@ -409,6 +411,8 @@ where
     where
         Options: ArenaOptions<T, Mutable = Bool<false>>,
     {
+        // SAFETY: Mutable references cannot exist when `Options::Mutable` is
+        // false.
         unsafe { self.iter_at_unchecked(position) }
     }
 
