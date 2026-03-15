@@ -84,9 +84,12 @@ impl<T, Options: ArenaOptions<T>> Arena<T, Options> {
     where
         Options: ArenaOptions<T, Mutable = Bool<true>>,
     {
-        // SAFETY: `ManuallyDropArena::alloc` does not run any code that could
-        // possibly call any methods of `Self`, which ensures that we do not
-        // borrow the data in the `UnsafeCell` multiple times concurrently.
+        // SAFETY: There cannot be any existing references to the contents of
+        // the `UnsafeCell` because this type has no public methods that
+        // provide such references. Furthermore, `ManuallyDropArena::alloc`
+        // does not run any code that could possibly call any methods of
+        // `Self`, which ensures that we do not borrow the data in the
+        // cell multiple times concurrently.
         //
         // Additionally, the memory pointed to by the mutable reference we
         // return is guaranteed by the implementation of `ManuallyDropArena`
