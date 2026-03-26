@@ -1,6 +1,6 @@
 [package]
 name = "fixed-typed-arena"
-version = "0.3.4"
+version = "0.3.5-dev"
 edition = "2018"
 rust-version = "1.59"
 description = """A typed arena that uses fixed-size chunks to ensure \
